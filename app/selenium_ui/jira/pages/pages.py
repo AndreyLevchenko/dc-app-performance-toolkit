@@ -3,6 +3,7 @@ from selenium_ui.conftest import retry
 import time
 import random
 import json
+import string
 
 from selenium_ui.base_page import BasePage
 from selenium_ui.jira.pages.selectors import UrlManager, LoginPageLocators, DashboardLocators, PopupLocators, \
@@ -248,3 +249,48 @@ class Board(BasePage):
 
     def wait_for_scrum_board_backlog(self):
         self.wait_until_present(BoardLocators.scrum_board_backlog_content)
+
+class TaskListIssue(Issue):
+    def __init__(self, driver, issue_id=None, issue_key=None):
+        Issue.__init__(self, driver, issue_key, issue_id)
+
+    def create_task(self, rte):
+        self.fill_comment_edit(rte)
+
+    def create_tasks(self, rte, count=5):
+        self.fill_comment_edit(rte, count)
+
+    def fill_comment_edit(self, rte, count=1):
+        text = "".join([self.__get_macros_task() for _ in range(count)])
+        if rte:
+            self.__fill_rich_editor_textfield(text, selector=IssueLocators.edit_comment_text_field_RTE)
+        else:
+            self.__fill_textfield(text, selector=IssueLocators.edit_comment_text_field)
+
+    def __fill_rich_editor_textfield(self, text, selector):
+        self.wait_until_available_to_switch(selector)
+        self.get_element(IssueLocators.tinymce_description_field).send_keys(text)
+        self.return_to_parent_frame()
+
+    def __fill_textfield(self, text, selector):
+        self.get_element(selector).send_keys(text)
+
+    def fill_description_create(self, rte):
+        text_description = ''.join([self.__get_macros_task() for _ in range(20)])
+        if rte:
+            self.__fill_rich_editor_textfield(text_description, selector=IssueLocators.issue_description_field_RTE)
+        else:
+            self.__fill_textfield(text_description, selector=IssueLocators.issue_description_field)
+
+    def edit_issue_with_tasks(self, rte):
+        text_description = f"{''.join([self.__get_macros_task() for _ in range(20)])}"
+        if rte:
+            self.__fill_rich_editor_textfield(text_description, selector=IssueLocators.issue_description_field_RTE)
+        else:
+            self.__fill_textfield(text_description, selector=IssueLocators.issue_description_field)
+
+    def __random_string(self, count=10):
+        return ''.join([random.choice(string.ascii_letters) for _ in range(count)])
+
+    def __get_macros_task(self):
+        return f'{{task}}{self.__random_string(20)}'
